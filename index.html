@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tariq Drift - 3 Worlds</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #050912, #020308);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #game-wrapper {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 960px;
+      max-height: 540px;
+      aspect-ratio: 16 / 9;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+      background: #000;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #cda86c;
+    }
+
+    #hud {
+      position: absolute;
+      top: 8px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      font-size: 14px;
+      pointer-events: none;
+      text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+    }
+
+    #title-box {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    #subtitle {
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.85;
+    }
+
+    #stats-box {
+      text-align: right;
+      font-size: 13px;
+    }
+
+    .bar {
+      width: 140px;
+      height: 10px;
+      border-radius: 99px;
+      background: rgba(0, 0, 0, 0.5);
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      background: linear-gradient(90deg, #ffdd55, #ff0044);
+    }
+
+    #env-label {
+      margin-top: 6px;
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    #mode-switch {
+      position: absolute;
+      top: 44px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      pointer-events: auto;
+      z-index: 5;
+    }
+
+    .mode-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      padding: 4px 10px;
+      font-size: 11px;
+      text-transform: uppercase;
+      background: radial-gradient(circle at top, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.9));
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, #ffb347, #ff416c);
+      box-shadow: 0 0 18px rgba(255, 120, 80, 0.8);
+    }
+
+    .mode-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    #mobile-controls {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      display: none;
+      justify-content: space-between;
+      padding: 0 12px;
+      gap: 10px;
+      pointer-events: auto;
+      z-index: 4;
+    }
+
+    .control-cluster {
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-btn {
+      min-width: 54px;
+      min-height: 54px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: radial-gradient(circle at top, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.9));
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      touch-action: manipulation;
+    }
+
+    .control-btn:active {
+      transform: translateY(2px) scale(0.97);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+      background: radial-gradient(circle at bottom, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.95));
+    }
+
+    #help-tip {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      opacity: 0.85;
+      text-align: center;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+    }
+
+    #game-over-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      text-align: center;
+    }
+
+    #game-over-overlay h1 {
+      font-size: 42px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
+    }
+
+    #game-over-overlay p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    @media (pointer: coarse), (max-width: 768px) {
+      #mobile-controls {
+        display: flex;
+      }
+      #hud {
+        font-size: 12px;
+      }
+      #help-tip {
+        bottom: 70px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-wrapper">
+    <div id="game-container">
+      <canvas id="game"></canvas>
+
+      <div id="hud">
+        <div id="title-box">
+          Tariq Drift
+          <div id="subtitle">3 Worlds · Sahara · City · Police</div>
+          <div id="env-label"></div>
+        </div>
+        <div id="stats-box">
+          <div>Speed: <span id="speed-text">0</span> km/h</div>
+          <div>Boost</div>
+          <div class="bar">
+            <div class="bar-fill" id="boost-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Environment selector -->
+      <div id="mode-switch">
+        <button class="mode-btn active" data-env="sahara">1 · Sahara</button>
+        <button class="mode-btn" data-env="city">2 · City</button>
+        <button class="mode-btn" data-env="police">3 · Police</button>
+      </div>
+
+      <!-- Mobile controls -->
+      <div id="mobile-controls">
+        <div class="control-cluster">
+          <button class="control-btn" id="btn-left">◀︎</button>
+          <button class="control-btn" id="btn-right">▶︎</button>
+        </div>
+        <div class="control-cluster">
+          <button class="control-btn" id="btn-gas">Gas</button>
+          <button class="control-btn" id="btn-brake">Brake</button>
+        </div>
+        <div class="control-cluster">
+          <button class="control-btn" id="btn-drift">Drift</button>
+          <button class="control-btn" id="btn-boost">Boost</button>
+        </div>
+      </div>
+
+      <div id="help-tip">
+        PC: WASD / Arrows · Space = Drift · Shift = Boost · 1/2/3 = Worlds · L = Police Level · R = Restart
+      </div>
+
+      <div id="game-over-overlay">
+        <h1>GAME OVER</h1>
+        <p>Police caught you!<br/>Press <b>R</b> to restart (next level is harder).</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const speedText = document.getElementById("speed-text");
+    const boostBar = document.getElementById("boost-bar");
+    const envLabel = document.getElementById("env-label");
+    const gameOverOverlay = document.getElementById("game-over-overlay");
+
+    const BASE_WIDTH = 960;
+    const BASE_HEIGHT = 540;
+    canvas.width = BASE_WIDTH;
+    canvas.height = BASE_HEIGHT;
+
+    function resizeCanvas() {
+      // visual scaling via CSS
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    // Input
+    const keys = {};
+    const controls = {
+      left: false,
+      right: false,
+      accel: false,
+      brake: false,
+      drift: false,
+      boost: false,
+    };
+
+    // Simple siren sound (Web Audio)
+    let audioCtx = null;
+    let sirenOsc = null;
+    let sirenGain = null;
+    let audioStarted = false;
+    let sirenTime = 0;
+
+    function startAudio() {
+      if (audioStarted) return;
+      audioStarted = true;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtx = new AC();
+        sirenOsc = audioCtx.createOscillator();
+        sirenGain = audioCtx.createGain();
+        sirenOsc.type = "sine";
+        sirenOsc.connect(sirenGain);
+        sirenGain.connect(audioCtx.destination);
+        sirenGain.gain.value = 0;
+        sirenOsc.frequency.value = 600;
+        sirenOsc.start();
+      } catch (e) {
+        console.log("Audio init failed", e);
+      }
+    }
+
+    function updateSiren(dt) {
+      if (!audioCtx || !sirenOsc || !sirenGain) return;
+      sirenTime += dt;
+      const base = 700;
+      const range = 300;
+      const freq = base + Math.sin(sirenTime * 4) * range;
+      sirenOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+      let targetGain = (currentEnv === "police" && !gameOver) ? 0.08 : 0.0;
+      const currentGain = sirenGain.gain.value;
+      const newGain = currentGain + (targetGain - currentGain) * 0.1;
+      sirenGain.gain.setValueAtTime(newGain, audioCtx.currentTime);
+    }
+
+    window.addEventListener("keydown", (e) => {
+      const code = e.code;
+      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(code)) {
+        e.preventDefault();
+      }
+      keys[code] = true;
+      startAudio();
+
+      if (code === "Digit1") setEnvironment("sahara");
+      if (code === "Digit2") setEnvironment("city");
+      if (code === "Digit3") setEnvironment("police");
+
+      if (code === "KeyL" && currentEnv === "police") {
+        // cycle police level 1→2→3→1
+        let next = policeLevel + 1;
+        if (next > 3) next = 1;
+        setPoliceLevel(next);
+      }
+
+      if (code === "KeyR" && gameOver) {
+        resetGame(true); // go to next level until level 3
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      keys[e.code] = false;
+    });
+
+    function bindButton(id, prop) {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      const start = (e) => {
+        e.preventDefault();
+        controls[prop] = true;
+        startAudio();
+      };
+
+      const end = (e) => {
+        e.preventDefault();
+        controls[prop] = false;
+      };
+
+      ["touchstart", "mousedown"].forEach((ev) =>
+        el.addEventListener(ev, start)
+      );
+      ["touchend", "touchcancel", "mouseup", "mouseleave"].forEach((ev) =>
+        el.addEventListener(ev, end)
+      );
+    }
+
+    bindButton("btn-left", "left");
+    bindButton("btn-right", "right");
+    bindButton("btn-gas", "accel");
+    bindButton("btn-brake", "brake");
+    bindButton("btn-drift", "drift");
+    bindButton("btn-boost", "boost");
+
+    // Player car
+    const car = {
+      x: 0,
+      y: 0,
+      angle: 0,
+      speed: 0,
+      width: 48,
+      height: 26,
+      maxSpeed: 260,
+      accelRate: 90,
+      brakeRate: 140,
+      friction: 26,
+      driftFriction: 11,
+      boost: 100,
+      maxBoost: 100,
+      boostActive: false,
+      boostPower: 120,   // big boost
+      boostDrain: 35,
+      boostRecharge: 18,
+    };
+
+    // Police car (AI)
+    const police = {
+      x: -120,
+      y: -120,
+      angle: 0,
+      speed: 0,
+      width: 48,
+      height: 26,
+      maxSpeed: 220,
+      accel: 75,
+      brake: 90,
+      friction: 24,
+    };
+
+    // Police difficulty levels
+    let policeLevel = 1;
+
+    function setPoliceLevel(level) {
+      policeLevel = level;
+      if (level === 1) {
+        police.maxSpeed = 210;
+        police.accel = 70;
+        police.brake = 80;
+        police.friction = 22;
+      } else if (level === 2) {
+        police.maxSpeed = 250;
+        police.accel = 100;
+        police.brake = 110;
+        police.friction = 20;
+      } else if (level === 3) {
+        police.maxSpeed = 290;
+        police.accel = 135;
+        police.brake = 145;
+        police.friction = 18;
+      }
+      updateEnvLabel();
+    }
+
+    // World data
+    const world = {
+      dunes: [],
+      rocks: [],
+      trackLines: [],
+      cityBlocks: [],
+      cityRoads: [],
+      sandDetails: [],
+    };
+
+    const particles = [];
+
+    function randomRange(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function addDustParticle(x, y, vx, vy, color = "80, 60, 30") {
+      particles.push({
+        x,
+        y,
+        vx,
+        vy,
+        life: 0.7,
+        radius: randomRange(4, 9),
+        color,
+      });
+    }
+
+    function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function drawParticles(camX, camY) {
+      for (const p of particles) {
+        const screenX = BASE_WIDTH / 2 + (p.x - camX);
+        const screenY = BASE_HEIGHT / 2 + (p.y - camY);
+        const alpha = Math.max(p.life / 0.7, 0);
+        ctx.fillStyle = `rgba(${p.color}, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function initWorld() {
+      // Sahara dunes
+      for (let i = 0; i < 80; i++) {
+        world.dunes.push({
+          x: randomRange(-3400, 3400),
+          y: randomRange(-3400, 3400),
+          r: randomRange(90, 300),
+          shade: randomRange(0.35, 0.8),
+        });
+      }
+      // Sahara rocks
+      for (let i = 0; i < 50; i++) {
+        world.rocks.push({
+          x: randomRange(-2800, 2800),
+          y: randomRange(-2800, 2800),
+          r: randomRange(16, 38),
+        });
+      }
+      // Tyre track lines
+      for (let i = 0; i < 60; i++) {
+        const cx = randomRange(-2600, 2600);
+        const cy = randomRange(-2600, 2600);
+        const len = randomRange(120, 300);
+        const ang = randomRange(0, Math.PI * 2);
+        world.trackLines.push({ x: cx, y: cy, len, ang });
+      }
+      // Small sand ripples
+      for (let i = 0; i < 120; i++) {
+        world.sandDetails.push({
+          x: randomRange(-3500, 3500),
+          y: randomRange(-3500, 3500),
+          r: randomRange(8, 18),
+          rot: randomRange(0, Math.PI * 2),
+        });
+      }
+
+      // City grid
+      const blockSize = 260;
+      for (let gx = -3; gx <= 3; gx++) {
+        for (let gy = -3; gy <= 3; gy++) {
+          const centerX = gx * blockSize;
+          const centerY = gy * blockSize;
+          const isRoad = (gx === 0 || gy === 0);
+          if (!isRoad) {
+            world.cityBlocks.push({
+              x: centerX + randomRange(-18, 18),
+              y: centerY + randomRange(-18, 18),
+              w: randomRange(120, 170),
+              h: randomRange(110, 160),
+              height: randomRange(40, 120),
+              tint: randomRange(0.5, 1),
+            });
+          } else {
+            world.cityRoads.push({
+              x: centerX,
+              y: centerY,
+              w: blockSize,
+              h: blockSize,
+            });
+          }
+        }
+      }
+    }
+
+    const ENVIRONMENTS = ["sahara", "city", "police"];
+    let currentEnv = "sahara";
+    let policeFlashTime = 0;
+    let gameOver = false;
+
+    function resetPoliceBehindCar() {
+      const dist = 130;
+      police.x = car.x - Math.cos(car.angle) * dist;
+      police.y = car.y - Math.sin(car.angle) * dist;
+      police.angle = car.angle;
+      police.speed = 0;
+    }
+
+    function updateEnvLabel() {
+      let label = "";
+      if (currentEnv === "sahara") {
+        label = "World: Sahara · Golden dunes & dusty drift";
+      } else if (currentEnv === "city") {
+        label = "World: City · Neon night streets";
+      } else if (currentEnv === "police") {
+        label = "World: Police Chase · Level " + policeLevel + " · Escape the sirens!";
+      }
+      envLabel.textContent = label;
+    }
+
+    function setEnvironment(envName) {
+      if (!ENVIRONMENTS.includes(envName)) return;
+      currentEnv = envName;
+      document.querySelectorAll(".mode-btn").forEach((btn) => {
+        btn.classList.toggle(
+          "active",
+          btn.dataset.env === envName
+        );
+      });
+
+      if (envName === "police") {
+        resetPoliceBehindCar();
+      }
+
+      updateEnvLabel();
+    }
+
+    function resetGame(harder = false) {
+      gameOver = false;
+      gameOverOverlay.style.display = "none";
+
+      car.x = 0;
+      car.y = 0;
+      car.angle = 0;
+      car.speed = 0;
+      car.boost = car.maxBoost;
+
+      if (currentEnv === "police") {
+        if (harder) {
+          let next = policeLevel + 1;
+          if (next > 3) next = 3; // cap at level 3
+          setPoliceLevel(next);
+        }
+        resetPoliceBehindCar();
+      }
+
+      police.speed = 0;
+    }
+
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setEnvironment(btn.dataset.env);
+      });
+    });
+
+    function updateCar(dt) {
+      const accel =
+        keys["ArrowUp"] || keys["KeyW"] || controls.accel ? 1 : 0;
+      const brake =
+        keys["ArrowDown"] || keys["KeyS"] || controls.brake ? 1 : 0;
+      const left =
+        keys["ArrowLeft"] || keys["KeyA"] || controls.left ? 1 : 0;
+      const right =
+        keys["ArrowRight"] || keys["KeyD"] || controls.right ? 1 : 0;
+      const driftKey = keys["Space"] || controls.drift;
+      const boostKey = keys["ShiftLeft"] || keys["ShiftRight"] || controls.boost;
+
+      let speedUnits = (car.speed * 1000) / 3600;
+
+      if (accel) speedUnits += car.accelRate * dt;
+      if (brake) speedUnits -= car.brakeRate * dt;
+
+      const friction = driftKey ? car.driftFriction : car.friction;
+      if (speedUnits > 0) {
+        speedUnits -= friction * dt;
+        if (speedUnits < 0) speedUnits = 0;
+      } else if (speedUnits < 0) {
+        speedUnits += friction * dt;
+        if (speedUnits > 0) speedUnits = 0;
+      }
+
+      car.boostActive = false;
+      if (boostKey && car.boost > 0 && accel && speedUnits > 0) {
+        speedUnits *= 1 + (car.boostPower * dt) / 100;
+        car.boost -= car.boostDrain * dt;
+        if (car.boost < 0) car.boost = 0;
+        car.boostActive = true;
+      } else {
+        car.boost += car.boostRecharge * dt;
+        if (car.boost > car.maxBoost) car.boost = car.maxBoost;
+      }
+
+      car.speed = Math.max(
+        -car.maxSpeed * 0.4,
+        Math.min(car.maxSpeed * 1.25, (speedUnits * 3600) / 1000)
+      );
+      speedUnits = (car.speed * 1000) / 3600;
+
+      const turnInput = right - left;
+      if (Math.abs(speedUnits) > 1) {
+        const turnRate = driftKey ? 4.2 : 3.0;
+        car.angle += turnInput * turnRate * dt * Math.sign(speedUnits);
+      }
+
+      const dx = Math.cos(car.angle) * speedUnits * dt;
+      const dy = Math.sin(car.angle) * speedUnits * dt;
+      car.x += dx;
+      car.y += dy;
+
+      if (driftKey && Math.abs(speedUnits) > 10) {
+        const backX = car.x - Math.cos(car.angle) * (car.width * 0.6);
+        const backY = car.y - Math.sin(car.angle) * (car.width * 0.6);
+        const sideNoise = (Math.random() - 0.5) * 20;
+
+        let dustColor = "80, 60, 30";
+        if (currentEnv === "city" || currentEnv === "police") {
+          dustColor = "40, 40, 40";
+        }
+
+        addDustParticle(
+          backX + Math.cos(car.angle + Math.PI / 2) * sideNoise,
+          backY + Math.sin(car.angle + Math.PI / 2) * sideNoise,
+          -dx * 0.7 + randomRange(-20, 20),
+          -dy * 0.7 + randomRange(-20, 20),
+          dustColor
+        );
+      }
+
+      speedText.textContent = Math.round(Math.abs(car.speed));
+      const boostRatio = car.boost / car.maxBoost;
+      boostBar.style.transform = `scaleX(${boostRatio.toFixed(2)})`;
+    }
+
+    function updatePolice(dt) {
+      if (currentEnv !== "police") return;
+
+      const dx = car.x - police.x;
+      const dy = car.y - police.y;
+      const targetAngle = Math.atan2(dy, dx);
+
+      let angleDiff = targetAngle - police.angle;
+      angleDiff = ((angleDiff + Math.PI) % (2 * Math.PI)) - Math.PI;
+
+      const turnRate = 2.8 + policeLevel * 0.4;
+      police.angle += Math.max(-turnRate * dt, Math.min(turnRate * dt, angleDiff));
+
+      const distance = Math.hypot(dx, dy);
+
+      if (distance > 230) {
+        police.speed += police.accel * dt;
+      } else if (distance < 140) {
+        police.speed -= police.brake * dt;
+      }
+
+      if (police.speed > police.maxSpeed) police.speed = police.maxSpeed;
+      if (police.speed < 0) police.speed = 0;
+
+      if (police.speed > 0) {
+        police.speed -= police.friction * dt;
+        if (police.speed < 0) police.speed = 0;
+      }
+
+      const units = (police.speed * 1000) / 3600;
+      police.x += Math.cos(police.angle) * units * dt;
+      police.y += Math.sin(police.angle) * units * dt;
+    }
+
+    function checkCollision() {
+      if (currentEnv !== "police" || gameOver) return;
+      const dx = car.x - police.x;
+      const dy = car.y - police.y;
+      const dist = Math.hypot(dx, dy);
+      const hitDistance = 38;
+      if (dist < hitDistance) {
+        gameOver = true;
+        gameOverOverlay.style.display = "flex";
+      }
+    }
+
+    function drawSahara(camX, camY) {
+      const horizonY = BASE_HEIGHT * 0.45;
+      const skyGrd = ctx.createLinearGradient(0, 0, 0, horizonY);
+      skyGrd.addColorStop(0, "#65a8ff");
+      skyGrd.addColorStop(1, "#f4d9a3");
+      ctx.fillStyle = skyGrd;
+      ctx.fillRect(0, 0, BASE_WIDTH, horizonY);
+
+      const sandGrd = ctx.createLinearGradient(0, horizonY, 0, BASE_HEIGHT);
+      sandGrd.addColorStop(0, "#f4d9a3");
+      sandGrd.addColorStop(0.5, "#e1b875");
+      sandGrd.addColorStop(1, "#c28b52");
+      ctx.fillStyle = sandGrd;
+      ctx.fillRect(0, horizonY, BASE_WIDTH, BASE_HEIGHT - horizonY);
+
+      ctx.lineCap = "round";
+      for (const line of world.trackLines) {
+        const sx = BASE_WIDTH / 2 + (line.x - camX);
+        const sy = BASE_HEIGHT / 2 + (line.y - camY);
+        const ex = sx + Math.cos(line.ang) * line.len;
+        const ey = sy + Math.sin(line.ang) * line.len;
+        ctx.strokeStyle = "rgba(130, 95, 60, 0.5)";
+        ctx.lineWidth = 12;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+      }
+
+      for (const d of world.dunes) {
+        const sx = BASE_WIDTH / 2 + (d.x - camX);
+        const sy = BASE_HEIGHT / 2 + (d.y - camY);
+        const r = d.r;
+        const shade = d.shade;
+        const duneGrd = ctx.createRadialGradient(
+          sx - r * 0.3,
+          sy - r * 0.3,
+          r * 0.2,
+          sx,
+          sy,
+          r
+        );
+        duneGrd.addColorStop(0, `rgba(250, 220, 160, ${shade})`);
+        duneGrd.addColorStop(1, `rgba(170, 120, 70, ${shade})`);
+
+        ctx.fillStyle = duneGrd;
+        ctx.beginPath();
+        ctx.ellipse(
+          sx,
+          sy,
+          r,
+          r * 0.6,
+          randomRange(-0.4, 0.4),
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = "rgba(190, 150, 100, 0.55)";
+      ctx.lineWidth = 1.4;
+      for (const s of world.sandDetails) {
+        const sx = BASE_WIDTH / 2 + (s.x - camX);
+        const sy = BASE_HEIGHT / 2 + (s.y - camY);
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(s.rot);
+        ctx.beginPath();
+        ctx.arc(0, 0, s.r, -0.8, 0.8);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      for (const r of world.rocks) {
+        const sx = BASE_WIDTH / 2 + (r.x - camX);
+        const sy = BASE_HEIGHT / 2 + (r.y - camY);
+        ctx.fillStyle = "#4f3a2a";
+        ctx.beginPath();
+        ctx.ellipse(
+          sx,
+          sy,
+          r.r,
+          r.r * 0.7,
+          randomRange(-0.3, 0.3),
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.14)";
+        ctx.beginPath();
+        ctx.ellipse(
+          sx - r.r * 0.2,
+          sy - r.r * 0.2,
+          r.r * 0.5,
+          r.r * 0.3,
+          0,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+    }
+
+    function drawCity(camX, camY, nightFactor = 1) {
+      const grd = ctx.createLinearGradient(0, 0, 0, BASE_HEIGHT);
+      grd.addColorStop(0, `rgba(10, 18, 40, ${nightFactor})`);
+      grd.addColorStop(1, `rgba(2, 4, 10, ${nightFactor})`);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+
+      for (const road of world.cityRoads) {
+        const sx = BASE_WIDTH / 2 + (road.x - camX) - road.w / 2;
+        const sy = BASE_HEIGHT / 2 + (road.y - camY) - road.h / 2;
+        ctx.fillStyle = "#26292f";
+        ctx.fillRect(sx, sy, road.w, road.h);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([18, 14]);
+        ctx.beginPath();
+        ctx.moveTo(sx + road.w / 2, sy);
+        ctx.lineTo(sx + road.w / 2, sy + road.h);
+        ctx.moveTo(sx, sy + road.h / 2);
+        ctx.lineTo(sx + road.w, sy + road.h / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      for (const b of world.cityBlocks) {
+        const sx = BASE_WIDTH / 2 + (b.x - camX);
+        const sy = BASE_HEIGHT / 2 + (b.y - camY);
+        const w = b.w;
+        const h = b.h;
+
+        const baseGrd = ctx.createLinearGradient(
+          sx - w / 2,
+          sy - h / 2,
+          sx + w / 2,
+          sy + h / 2
+        );
+        baseGrd.addColorStop(0, `rgba(${50*b.tint}, ${60*b.tint}, ${80*b.tint}, 1)`);
+        baseGrd.addColorStop(1, `rgba(${25*b.tint}, ${30*b.tint}, ${45*b.tint}, 1)`);
+
+        ctx.fillStyle = baseGrd;
+        ctx.fillRect(sx - w / 2, sy - h / 2 - b.height * 0.2, w, h + b.height * 0.2);
+
+        const winRows = 4;
+        const winCols = 6;
+        const winW = w / (winCols + 1);
+        const winH = h / (winRows + 2);
+        for (let r = 0; r < winRows; r++) {
+          for (let c = 0; c < winCols; c++) {
+            if (Math.random() < 0.2) continue;
+            const wx = sx - w / 2 + winW * (c + 0.6);
+            const wy = sy - h / 2 - b.height * 0.15 + winH * (r + 0.8);
+            const on = Math.random() < 0.7;
+            ctx.fillStyle = on
+              ? "rgba(255, 240, 180, 0.9)"
+              : "rgba(40, 40, 60, 0.9)";
+            ctx.fillRect(wx, wy, winW * 0.7, winH * 0.7);
+          }
+        }
+      }
+    }
+
+    function drawPoliceOverlay(dt) {
+      policeFlashTime += dt;
+      const flash = Math.sin(policeFlashTime * 8);
+      const alpha = 0.18 * Math.abs(flash);
+
+      ctx.fillStyle = `rgba(255,0,40,${alpha})`;
+      ctx.fillRect(0, 0, BASE_WIDTH / 2, BASE_HEIGHT);
+
+      ctx.fillStyle = `rgba(0,120,255,${alpha})`;
+      ctx.fillRect(BASE_WIDTH / 2, 0, BASE_WIDTH / 2, BASE_HEIGHT);
+    }
+
+    function drawCar(camX, camY, bodyColorMid = "#2f7cff") {
+      const sx = BASE_WIDTH / 2 + (car.x - camX);
+      const sy = BASE_HEIGHT / 2 + (car.y - camY);
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(car.angle);
+
+      ctx.fillStyle = "rgba(0,0,0,0.40)";
+      ctx.beginPath();
+      ctx.ellipse(0, 7, car.width * 0.70, car.height * 0.95, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const gradient = ctx.createLinearGradient(-car.width/2, 0, car.width/2, 0);
+      gradient.addColorStop(0, "#16161b");
+      gradient.addColorStop(0.5, car.boostActive ? "#ff3366" : bodyColorMid);
+      gradient.addColorStop(1, "#09090e");
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(-car.width / 2, -car.height / 2, car.width, car.height);
+
+      ctx.fillStyle = "rgba(200,220,255,0.92)";
+      ctx.fillRect(-car.width * 0.25, -car.height * 0.45, car.width * 0.5, car.height * 0.34);
+
+      ctx.fillStyle = "rgba(255,255,255,0.16)";
+      ctx.fillRect(-car.width * 0.45, -car.height * 0.25, car.width * 0.4, car.height * 0.7);
+
+      ctx.fillStyle = "#ffd45a";
+      ctx.fillRect(car.width / 2 - 4, -car.height / 2 + 1, 4, 6);
+      ctx.fillRect(car.width / 2 - 4, car.height / 2 - 7, 4, 6);
+
+      ctx.restore();
+    }
+
+    function drawPoliceCar(camX, camY) {
+      const sx = BASE_WIDTH / 2 + (police.x - camX);
+      const sy = BASE_HEIGHT / 2 + (police.y - camY);
+
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(police.angle);
+
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.beginPath();
+      ctx.ellipse(0, 7, police.width * 0.65, police.height * 0.9, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#111";
+      ctx.fillRect(-police.width / 2, -police.height / 2, police.width, police.height);
+
+      ctx.fillStyle = "#f5f5f5";
+      ctx.fillRect(-police.width * 0.15, -police.height / 2, police.width * 0.3, police.height);
+
+      const barW = police.width * 0.6;
+      const barH = 4;
+      ctx.fillStyle = "#ff2244";
+      ctx.fillRect(-barW / 2, -police.height / 2 - barH - 1, barW / 2, barH);
+      ctx.fillStyle = "#2277ff";
+      ctx.fillRect(0, -police.height / 2 - barH - 1, barW / 2, barH);
+
+      ctx.fillStyle = "#99c9ff";
+      ctx.fillRect(-police.width * 0.26, -police.height * 0.45, police.width * 0.52, police.height * 0.34);
+
+      ctx.fillStyle = "#ffd45a";
+      ctx.fillRect(police.width / 2 - 4, -police.height / 2 + 1, 4, 6);
+      ctx.fillRect(police.width / 2 - 4, police.height / 2 - 7, 4, 6);
+
+      ctx.restore();
+    }
+
+    function getCamera() {
+      return { x: car.x, y: car.y };
+    }
+
+    let lastTime = performance.now();
+    initWorld();
+    setPoliceLevel(1);
+    setEnvironment("sahara");
+    resetGame(false);
+
+    function loop(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.033);
+      lastTime = now;
+
+      if (!gameOver) {
+        updateCar(dt);
+        updatePolice(dt);
+        checkCollision();
+      }
+
+      updateParticles(dt);
+      updateSiren(dt);
+
+      const cam = getCamera();
+
+      if (currentEnv === "sahara") {
+        drawSahara(cam.x, cam.y);
+      } else {
+        const nightFactor = currentEnv === "police" ? 1.1 : 1;
+        drawCity(cam.x, cam.y, nightFactor);
+      }
+
+      drawParticles(cam.x, cam.y);
+
+      if (currentEnv === "police") {
+        drawPoliceCar(cam.x, cam.y);
+        drawCar(cam.x, cam.y, "#ff8844");
+        drawPoliceOverlay(dt);
+      } else if (currentEnv === "city") {
+        drawCar(cam.x, cam.y, "#00c2ff");
+      } else {
+        drawCar(cam.x, cam.y, "#2f7cff");
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
